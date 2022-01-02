@@ -32,10 +32,70 @@ gin-chat-demo/
 
 # 项目运行
 
-- 下载依赖
+## (1) 下载依赖
 
 ```bash
 go mod tidy
+```
+
+## (2) mysql容器
+```bash
+docker pull mysql
+docker run -d --name mysql8 -p 3306:3306 -e MYSQL_ROOT_PASSWORD=123456 -v ~/DockDir/mysql8/conf:/etc/mysql/conf.d mysql
+docker exec -it mysql8 mysql -uroot -p123456
+```
+
+其中映射目录下的配置文件my.cnf内容如下:
+```bash
+# mysql下的是MySQL客户端的配置
+[mysql]
+
+
+# mysqld下的是MySQL服务端的配置
+[mysqld]
+user		= mysql
+port		= 3306
+pid-file	= /var/run/mysqld/mysqld.pid
+socket	= /var/run/mysqld/mysqld.sock
+
+# 允许连接的IP地址, 注释掉之后所有IP的机器都可以连接本MySQL服务端
+# bind-address		= 127.0.0.1
+
+# 指定单个查询能够使用的缓冲区大小
+key_buffer_size		= 16M
+```
+
+## (3) redis容器
+```bash
+docker pull redis
+docker run -d --name=redis -p 6379:6379 -v ~/DockerDir/redis:/etc/redis redis
+docker exec -it xxx redis-cli
+```
+
+其中映射目录下的配置文件redis.conf内容如下:
+```bash
+bind 127.0.0.1
+
+protected-mode no
+
+port 6379
+
+tcp-backlog 511
+
+timeout 0
+
+tcp-keepalive 300
+
+daemonize no
+
+pidfile /var/run/redis_6379.pid
+```
+
+## (4) mongodb容器
+```bash
+docker pull mongo
+docker run -d --name mongo -p 27017:27017 mongo --auth
+docker exec -it mongo mongosh
 ```
 
 - 执行
