@@ -10,10 +10,36 @@
 ## 项目结构
 ```bash
 gin-chat-demo/
+├── api
 ├── cache
 ├── conf
-├── e
 ├── model
 ├── router
+├── serializer
 └── service
+```
+- cache : 放置redis配置
+- conf : 放置配置文件 
+- model : 数据库模型
+- router ： 路由模块
+- service ：服务模块
+
+# 项目功能
+
+- 两人通信
+- 在线、不在线应答
+- 查看历史聊天记录
+
+# 项目运行
+
+- 下载依赖
+
+```bash
+go mod tidy
+```
+
+- 执行
+
+```bash
+go run main.go
 ```
