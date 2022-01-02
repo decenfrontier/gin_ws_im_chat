@@ -7,7 +7,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"  //MongoDB的Go驱动包
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"gopkg.in/ini.v1"
-	"strings"
 )
 
 var (
@@ -36,15 +35,6 @@ func Init() {
 	LoadServer(file)
 	LoadMysqlData(file)
 	LoadMongoDB(file)
-	if err := LoadLocales("conf/locales/zh-cn.yaml"); err != nil {
-		logging.Info(err) //日志内容
-		panic(err)
-	}
-	//MySQL
-	path := strings.Join([]string{DbUser, ":", DbPassWord, "@tcp(", DbHost, ":", DbPort, ")/", DbName, "?charset=utf8&parseTime=true"}, "")
-	model.Database(path)
-	//MongoDB
-	MongoDB()
 }
 
 func MongoDB() {
