@@ -1,12 +1,14 @@
 package conf
 
 import (
+	"chat/model"
 	"context"
 	"fmt"
 	logging "github.com/sirupsen/logrus" //github.com/sirupsen/logrus
 	"go.mongodb.org/mongo-driver/mongo"  //MongoDB的Go驱动包
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"gopkg.in/ini.v1"
+	"strings"
 )
 
 var (
@@ -35,7 +37,11 @@ func Init() {
 	LoadServer(file)
 	LoadMysqlData(file)
 	LoadMongoDB(file)
+	// 连接MongoDB
 	MongoDB()
+	// 连接MySQL
+	path := strings.Join([]string{DbUser, ":", DbPassWord, "@tcp(", DbHost, ":", DbPort, ")/", DbName, "?charset=utf8&parseTime=true"}, "")
+	model.Database(path)
 }
 
 func MongoDB() {
