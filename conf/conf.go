@@ -35,6 +35,7 @@ func Init() {
 	LoadServer(file)
 	LoadMysqlData(file)
 	LoadMongoDB(file)
+	MongoDB()
 }
 
 func MongoDB() {

@@ -23,6 +23,7 @@ func Init() {
 		fmt.Println("配置文件读取错误，请检查文件路径:", err)
 	}
 	LoadRedis(file)
+	Redis()
 }
 
 func LoadRedis(file *ini.File) {
