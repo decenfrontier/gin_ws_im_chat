@@ -22,23 +22,17 @@ const (
 )
 
 //SetPassword 设置密码
-func (user *User) SetPassword(password string) error {
+func (this *User) SetPassword(password string) error {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), PassWordCost)
 	if err != nil {
 		return err
 	}
-	user.PasswordDigest = string(bytes)
+	this.PasswordDigest = string(bytes)
 	return nil
 }
 
 //CheckPassword 校验密码
-func (user *User) CheckPassword(password string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(user.PasswordDigest), []byte(password))
+func (this *User) CheckPassword(password string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(this.PasswordDigest), []byte(password))
 	return err == nil
-}
-
-//AvatarUrl 封面地址
-func (user *User) AvatarURL() string {
-	signedGetURL := user.Avatar
-	return signedGetURL
 }
