@@ -1,9 +1,14 @@
 package service
 
 import (
+	"chat/cache"
+	"chat/ret"
+	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"log"
 	"net/http"
+	"time"
 )
 
 const month = 60 * 60 * 24 * 30
@@ -27,8 +32,39 @@ type Client struct {
 	Send   chan []byte
 }
 
+// 接收消息
 func (this *Client) Read() {
-
+	defer func() {
+		Manager.Unregister <- this
+		_ = this.Socket.Close()
+	}()
+	for {
+		this.Socket.PongHandler()
+		sendMsg := new(SendMsg)
+		err := this.Socket.ReadJSON(sendMsg)
+		if err != nil {
+			log.Println("数据格式不正确", err)
+			break
+		}
+		if sendMsg.Type == 1 { // 发送消息
+			r1, _ := cache.RedisClient.Get(this.ID).Result()
+			r2, _ := cache.RedisClient.Get(this.SendID).Result()
+			if r1 > "3" && r2 == "" { // 防止1频繁骚扰2
+				replyMsg := ReplyMsg{
+					Code:    ret.WebsocketLimit,
+					Content: "达到限制",
+				}
+				msg, _ := json.Marshal(replyMsg)
+				_ = this.Socket.WriteMessage(websocket.TextMessage, msg)
+				continue
+			} else {
+				// 建立的连接缓存三个月
+				cache.RedisClient.Incr(this.ID)
+				_, _ = cache.RedisClient.Expire(this.ID, time.Hour*24*30*3).Result()
+			}
+			Manager.Broadcast <- &Broadcast{Client: this, Message: []byte(sendMsg.Content)}
+		}
+	}
 }
 
 func (this *Client) Write() {
@@ -73,10 +109,13 @@ func CreateID(uid, toUid string) string {
 func Handler(c *gin.Context) {
 	uid := c.Query("id")
 	toUid := c.Query("toUid")
-	conn, err := (&websocket.Upgrader{
+	var upgrader = websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool { // CheckOrigin解决跨域问题
 			return true
-		}}).Upgrade(c.Writer, c.Request, nil) // tcp协议升级成ws协议
+		},
+	}
+	// 调用Upgrader.Upgrade使http协议, 升级成ws协议, 并返回一个*conn
+	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		http.NotFound(c.Writer, c.Request)
 		return
@@ -90,7 +129,7 @@ func Handler(c *gin.Context) {
 	}
 	// 用户注册到用户管理上
 	Manager.Register <- client
-	// 读写
+	// 使用conn收发消息
 	go client.Read()
 	go client.Write()
 }
