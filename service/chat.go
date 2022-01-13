@@ -4,6 +4,7 @@ import (
 	"chat/cache"
 	"chat/ret"
 	"encoding/json"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"log"
@@ -67,8 +68,27 @@ func (this *Client) Read() {
 	}
 }
 
+// 发送消息
 func (this *Client) Write() {
-
+	defer func() {
+		_ = this.Socket.Close()
+	}()
+	for {
+		select {
+		case message, ok := <-this.Send:
+			if !ok {
+				_ = this.Socket.WriteMessage(websocket.CloseMessage, []byte{})
+				return
+			}
+			log.Println(this.ID, "接受消息:", string(message))
+			replyMsg := ReplyMsg{
+				Code:    ret.WebsocketSuccessMessage,
+				Content: fmt.Sprintf("%s", string(message)),
+			}
+			msg, _ := json.Marshal(replyMsg)
+			_ = this.Socket.WriteMessage(websocket.TextMessage, msg)
+		}
+	}
 }
 
 // 广播类，包括广播内容和源用户
