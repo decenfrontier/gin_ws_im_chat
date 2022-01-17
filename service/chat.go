@@ -127,7 +127,7 @@ func CreateID(uid, toUid string) string {
 }
 
 func Handler(c *gin.Context) {
-	uid := c.Query("id")
+	uid := c.Query("uid")
 	toUid := c.Query("toUid")
 	var upgrader = websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool { // CheckOrigin解决跨域问题
