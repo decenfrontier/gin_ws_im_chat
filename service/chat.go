@@ -42,7 +42,7 @@ func (this *Client) Read() {
 	for {
 		this.Socket.PongHandler()
 		sendMsg := new(SendMsg)
-		err := this.Socket.ReadJSON(sendMsg)
+		err := this.Socket.ReadJSON(&sendMsg)
 		if err != nil {
 			log.Println("数据格式不正确", err)
 			break
@@ -59,8 +59,8 @@ func (this *Client) Read() {
 				_ = this.Socket.WriteMessage(websocket.TextMessage, msg)
 				continue
 			} else {
-				// 建立的连接缓存三个月
 				cache.RedisClient.Incr(this.ID)
+				// 建立的连接缓存三个月
 				_, _ = cache.RedisClient.Expire(this.ID, time.Hour*24*30*3).Result()
 			}
 			Manager.Broadcast <- &Broadcast{Client: this, Message: []byte(sendMsg.Content)}

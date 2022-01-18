@@ -1,8 +1,10 @@
 package service
 
 import (
+	"chat/conf"
 	"chat/ret"
 	"encoding/json"
+	"fmt"
 	"github.com/gorilla/websocket"
 	"log"
 )
@@ -31,6 +33,48 @@ func (manager *ClientManager) Start() {
 				_ = conn.Socket.WriteMessage(websocket.TextMessage, msg)
 				close(conn.Send)
 				delete(Manager.Clients, conn.ID)
+			}
+		case broadcast := <-Manager.Broadcast: // 广播信息
+			message := broadcast.Message
+			sendId := broadcast.Client.SendID
+			flag := false // 默认对方不在线
+			for id, conn := range Manager.Clients {
+				if id != sendId {
+					continue
+				}
+				select {
+				case conn.Send <- message:
+					flag = true
+				default:
+					close(conn.Send)
+					delete(Manager.Clients, conn.ID)
+				}
+			}
+			id := broadcast.Client.ID
+			if flag {
+				log.Println("对方在线应答")
+				replyMsg := &ReplyMsg{
+					Code:    ret.WebsocketOnlineReply,
+					Content: "对方在线应答",
+				}
+				msg, err := json.Marshal(replyMsg)
+				_ = broadcast.Client.Socket.WriteMessage(websocket.TextMessage, msg)
+				err = InsertMsg(conf.MongoDBName, id, string(message), 1, int64(3*month))
+				if err != nil {
+					fmt.Println("InsertOneMsg Err", err)
+				}
+			} else {
+				log.Println("对方不在线")
+				replyMsg := ReplyMsg{
+					Code:    ret.WebsocketOfflineReply,
+					Content: "对方不在线应答",
+				}
+				msg, err := json.Marshal(replyMsg)
+				_ = broadcast.Client.Socket.WriteMessage(websocket.TextMessage, msg)
+				err = InsertMsg(conf.MongoDBName, id, string(message), 0, int64(3*month))
+				if err != nil {
+					fmt.Println("InsertOneMsg Err", err)
+				}
 			}
 		}
 	}
