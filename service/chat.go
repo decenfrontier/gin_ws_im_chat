@@ -25,8 +25,7 @@ type ReplyMsg struct {
 	Content string `json:"content"`
 }
 
-// 用户类
-type Client struct {
+type Client struct { // 用户类
 	ID     string
 	SendID string
 	Socket *websocket.Conn

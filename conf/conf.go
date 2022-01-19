@@ -28,7 +28,7 @@ var (
 	MongoDBPort string
 )
 
-func Init() {
+func init() {
 	//从本地读取环境变量
 	file, err := ini.Load("./conf/config.ini")
 	if err != nil {
