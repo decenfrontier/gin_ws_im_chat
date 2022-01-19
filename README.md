@@ -13,22 +13,26 @@ gin-chat-demo/
 ├── api
 ├── conf
 ├── model
+├── ret
 ├── router
 ├── serializer
 └── service
 ```
 - api : 接口处理函数
-- cache : 放置redis配置
 - conf : 放置配置文件 
-- model : 数据库模型
+- model : 数据库模型类
+- ret : 返回码和返回消息
 - router ： 路由模块
+- serializer : 序列化与反序列化
 - service ：服务模块
+
 
 # 2 项目功能
 
 - 两人通信
 - 在线、不在线应答
 - 查看历史聊天记录
+
 
 # 3 搭建开发环境
 

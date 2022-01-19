@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -63,6 +64,32 @@ func (this *Client) Read() {
 				_, _ = conf.RedisClient.Expire(this.ID, time.Hour*24*30*3).Result()
 			}
 			Manager.Broadcast <- &Broadcast{Client: this, Message: []byte(sendMsg.Content)}
+		} else if sendMsg.Type == 2 { // 获取历史消息
+			timeT, err := strconv.Atoi(sendMsg.Content)
+			if err != nil {
+				timeT = 999999999
+			}
+			// 获取10条历史消息
+			results, _ := FindMany(conf.MongoDBName, this.SendID, this.ID, int64(timeT), 10)
+			if len(results) > 10 {
+				results = results[:10]
+			} else if len(results) == 0 {
+				replyMsg := ReplyMsg{
+					Code:    ret.WebsocketEnd,
+					Content: "到底了",
+				}
+				msg, _ := json.Marshal(replyMsg)
+				_ = this.Socket.WriteMessage(websocket.TextMessage, msg)
+				continue
+			}
+			for _, result := range results {
+				replyMsg := ReplyMsg{
+					From:    result.From,
+					Content: fmt.Sprintf("%s", result.Msg),
+				}
+				msg, _ := json.Marshal(replyMsg)
+				_ = this.Socket.WriteMessage(websocket.TextMessage, msg)
+			}
 		}
 	}
 }

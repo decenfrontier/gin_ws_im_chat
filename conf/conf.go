@@ -76,6 +76,20 @@ func MySQL() {
 	model.Database(path)
 }
 
+func Redis() {
+	db, _ := strconv.ParseUint(RedisDbName, 10, 64)
+	client := redis.NewClient(&redis.Options{
+		Addr: RedisAddr,
+		DB:   int(db),
+	})
+	_, err := client.Ping().Result()
+	if err != nil {
+		logging.Error(err)
+		panic(err)
+	}
+	RedisClient = client
+}
+
 func LoadServer(file *ini.File) {
 	AppMode = file.Section("service").Key("AppMode").String()
 	HttpPort = file.Section("service").Key("HttpPort").String()
@@ -103,18 +117,4 @@ func LoadRedis(file *ini.File) {
 	RedisAddr = redisSection.Key("RedisAddr").String()
 	RedisPw = redisSection.Key("RedisPw").String()
 	RedisDbName = redisSection.Key("RedisDbName").String()
-}
-
-func Redis() {
-	db, _ := strconv.ParseUint(RedisDbName, 10, 64)
-	client := redis.NewClient(&redis.Options{
-		Addr: RedisAddr,
-		DB:   int(db),
-	})
-	_, err := client.Ping().Result()
-	if err != nil {
-		logging.Error(err)
-		panic(err)
-	}
-	RedisClient = client
 }
