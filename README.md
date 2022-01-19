@@ -7,7 +7,7 @@
 - MongoDB 用来存放用户聊天信息
 - Redis 用来存储处理过期信息
 
-## 项目结构
+## 1 项目结构
 ```bash
 gin-chat-demo/
 ├── api
@@ -24,13 +24,13 @@ gin-chat-demo/
 - router ： 路由模块
 - service ：服务模块
 
-# 项目功能
+# 2 项目功能
 
 - 两人通信
 - 在线、不在线应答
 - 查看历史聊天记录
 
-# 项目运行
+# 3 搭建开发环境
 
 ## (1) 下载依赖
 
@@ -103,3 +103,10 @@ docker exec -it mongo mongosh
 ```bash
 go run main.go
 ```
+
+# 4 功能演示
+## (1) 1 -> 2
+[![7DgmBF.png](https://s4.ax1x.com/2022/01/19/7DgmBF.png)](https://imgtu.com/i/7DgmBF)
+
+## (2) 2 -> 1
+[![7DggHg.png](https://s4.ax1x.com/2022/01/19/7DggHg.png)](https://imgtu.com/i/7DggHg)
