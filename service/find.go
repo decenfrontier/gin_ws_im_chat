@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"log"
 	"sort"
 	"time"
 )
@@ -44,6 +45,57 @@ func FindMany(database string, sendId string, id string, time int64, pageSize in
 	err = sendIdTimeCursor.All(context.TODO(), &resultsYou) // sendId 对面发过来的
 	err = idTimeCursor.All(context.TODO(), &resultsMe)      // Id 发给对面的
 	results, _ = AppendAndSort(resultsMe, resultsYou)
+	return
+}
+
+func FirstFindMsg(database string, sendId string, id string) (results []model.Result, err error) {
+	// 首次查询(把对方发来的所有未读都取出来)
+	var resultsMe []model.Trainer
+	var resultsYou []model.Trainer
+	sendIdCollection := conf.MongoDBClient.Database(database).Collection(sendId)
+	idCollection := conf.MongoDBClient.Database(database).Collection(sendId)
+	filter := bson.M{"read": bson.M{
+		"&all": []uint{0},
+	}}
+	sendIdCursor, err := sendIdCollection.Find(context.TODO(), filter, options.Find().SetSort(bson.D{{
+		"startTime", 1}}), options.Find().SetLimit(1))
+	if sendIdCursor == nil {
+		return
+	}
+	var unReads []model.Trainer
+	err = sendIdCursor.All(context.TODO(), &unReads)
+	if err != nil {
+		log.Println("sendIdCursor err", err)
+	}
+	if len(unReads) > 0 {
+		timeFilter := bson.M{
+			"startTime": bson.M{
+				"$gte": unReads[0].StartTime,
+			},
+		}
+		sendIdTimeCursor, _ := sendIdCollection.Find(context.TODO(), timeFilter)
+		idTimeCursor, _ := idCollection.Find(context.TODO(), timeFilter)
+		err = sendIdTimeCursor.All(context.TODO(), &resultsYou)
+		err = idTimeCursor.All(context.TODO(), &resultsMe)
+		results, err = AppendAndSort(resultsMe, resultsYou)
+	} else {
+		results, err = FindMany(database, sendId, id, 9999999999, 10)
+	}
+	overTimeFilter := bson.D{
+		{"$and", bson.A{
+			bson.D{{"endTime", bson.M{"&lt": time.Now().Unix()}}},
+			bson.D{{"read", bson.M{"$eq": 1}}},
+		}},
+	}
+	_, _ = sendIdCollection.DeleteMany(context.TODO(), overTimeFilter)
+	_, _ = idCollection.DeleteMany(context.TODO(), overTimeFilter)
+	// 将所有的维度设置为已读
+	_, _ = sendIdCollection.UpdateMany(context.TODO(), filter, bson.M{
+		"$set": bson.M{"read": 1},
+	})
+	_, _ = sendIdCollection.UpdateMany(context.TODO(), filter, bson.M{
+		"&set": bson.M{"ebdTime": time.Now().Unix() + int64(3*month)},
+	})
 	return
 }
 

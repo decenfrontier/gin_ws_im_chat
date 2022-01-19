@@ -90,6 +90,19 @@ func (this *Client) Read() {
 				msg, _ := json.Marshal(replyMsg)
 				_ = this.Socket.WriteMessage(websocket.TextMessage, msg)
 			}
+		} else if sendMsg.Type == 3 { // 首次查询时, 取出对方发来的所有未读
+			results, err := FirstFindMsg(conf.MongoDBName, this.SendID, this.ID)
+			if err != nil {
+				log.Println(err)
+			}
+			for _, result := range results {
+				replyMsg := ReplyMsg{
+					From:    result.From,
+					Content: fmt.Sprintf("%s", result.Msg),
+				}
+				msg, _ := json.Marshal(replyMsg)
+				_ = this.Socket.WriteMessage(websocket.TextMessage, msg)
+			}
 		}
 	}
 }
