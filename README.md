@@ -11,13 +11,13 @@
 ```bash
 gin-chat-demo/
 ├── api
-├── cache
 ├── conf
 ├── model
 ├── router
 ├── serializer
 └── service
 ```
+- api : 接口处理函数
 - cache : 放置redis配置
 - conf : 放置配置文件 
 - model : 数据库模型

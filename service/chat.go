@@ -1,7 +1,7 @@
 package service
 
 import (
-	"chat/cache"
+	"chat/conf"
 	"chat/ret"
 	"encoding/json"
 	"fmt"
@@ -47,8 +47,8 @@ func (this *Client) Read() {
 			break
 		}
 		if sendMsg.Type == 1 { // 发送消息
-			r1, _ := cache.RedisClient.Get(this.ID).Result()
-			r2, _ := cache.RedisClient.Get(this.SendID).Result()
+			r1, _ := conf.RedisClient.Get(this.ID).Result()
+			r2, _ := conf.RedisClient.Get(this.SendID).Result()
 			if r1 > "3" && r2 == "" { // 防止1频繁骚扰2
 				replyMsg := ReplyMsg{
 					Code:    ret.WebsocketLimit,
@@ -58,9 +58,9 @@ func (this *Client) Read() {
 				_ = this.Socket.WriteMessage(websocket.TextMessage, msg)
 				continue
 			} else {
-				cache.RedisClient.Incr(this.ID)
+				conf.RedisClient.Incr(this.ID)
 				// 建立的连接缓存三个月
-				_, _ = cache.RedisClient.Expire(this.ID, time.Hour*24*30*3).Result()
+				_, _ = conf.RedisClient.Expire(this.ID, time.Hour*24*30*3).Result()
 			}
 			Manager.Broadcast <- &Broadcast{Client: this, Message: []byte(sendMsg.Content)}
 		}
