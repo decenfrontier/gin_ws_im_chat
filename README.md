@@ -98,7 +98,7 @@ pidfile /var/run/redis_6379.pid
 ## (4) mongodb容器
 ```bash
 docker pull mongo
-docker run -d --name mongo -p 27017:27017 mongo --auth
+docker run -d --name mongo -p 27017:27017 mongo
 docker exec -it mongo mongosh
 ```
 
