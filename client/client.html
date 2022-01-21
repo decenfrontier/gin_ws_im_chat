@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>websocketClient</title>
+
+</head>
+<body>
+<div style="display:flex; align-items:center; justify-content: space-between" >
+    <div>
+        <input id="input1_addr" type="text"/>
+        <button onclick="connect('input1_addr', 1)">Connect</button>
+        <br>
+        <input id="input1" type="text"/>
+        <button onclick="send('input1', 1)">Send</button>
+        <pre id="output1"></pre>
+    </div>
+    <div>
+        <input id="input2_addr" type="text"/>
+        <button onclick="connect('input2_addr', 2)">Connect</button>
+        <br>
+        <input id="input2" type="text"/>
+        <button onclick="send('input2', 2)">Send</button>
+        <pre id="output2"></pre>
+    </div>
+</div>
+
+</body>
+<script>
+    document.getElementById("input1_addr").value = "ws://localhost:3000/ws?uid=1&toUid=2"
+    document.getElementById("input2_addr").value = "ws://localhost:3000/ws?uid=2&toUid=1"
+    var socket1, socket2, socket;
+    function connect (id, number) {
+        var addr, output;
+
+        if (number == 1) {
+            addr = "ws://localhost:3000/ws?uid=1&toUid=2"
+            socket1 = new WebSocket(addr);
+            socket = socket1;
+            output = document.getElementById("output1");
+        } else {
+            addr = "ws://localhost:3000/ws?uid=2&toUid=1"
+            socket2 = new WebSocket(addr);
+            socket = socket2;
+            output = document.getElementById("output2");
+        }
+
+        socket.onopen = function () {
+            output.innerHTML += "Status: Connected\n";
+        };
+
+        socket.onmessage = function (e) {
+            output.innerHTML += "Server: " + e.data + "\n";
+        };
+    }
+
+    function send(id, number) {
+        if (number == 1) {
+            socket = socket1
+        } else {
+            socket = socket2
+        }
+        var input = document.getElementById(id);
+        console.log("input.value:", input.value, typeof(input.value))
+        var data = input.value
+        socket.send(data);
+    }
+</script>
+</html>
