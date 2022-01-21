@@ -30,7 +30,7 @@ func InsertMsg(database string, id string, content string, read uint, expire int
 	return
 }
 
-func FindMany(database string, sendId string, id string, time int64, pageSize int) (results []model.Result, err error) {
+func FindMany(database string, sendId string, id string, pageSize int) (results []model.Result, err error) {
 	var resultsMe []model.Trainer  // id
 	var resultsYou []model.Trainer // sendId
 	db := conf.MongoDBClient.Database(database)
@@ -79,7 +79,7 @@ func FirstFindMsg(database string, sendId string, id string) (results []model.Re
 		err = idTimeCursor.All(context.TODO(), &resultsMe)
 		results, err = AppendAndSort(resultsMe, resultsYou)
 	} else {
-		results, err = FindMany(database, sendId, id, 9999999999, 10)
+		results, err = FindMany(database, sendId, id, 10)
 	}
 	overTimeFilter := bson.D{
 		{"$and", bson.A{

@@ -9,7 +9,6 @@ import (
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
-	"strconv"
 	"time"
 )
 
@@ -65,12 +64,8 @@ func (this *Client) Read() {
 			}
 			Manager.Broadcast <- &Broadcast{Client: this, Message: []byte(sendMsg.Content)}
 		} else if sendMsg.Type == 2 { // 获取历史消息
-			timeT, err := strconv.Atoi(sendMsg.Content)
-			if err != nil {
-				timeT = 999999999
-			}
 			// 获取10条历史消息
-			results, _ := FindMany(conf.MongoDBName, this.SendID, this.ID, int64(timeT), 10)
+			results, _ := FindMany(conf.MongoDBName, this.SendID, this.ID, 10)
 			if len(results) > 10 {
 				results = results[:10]
 			} else if len(results) == 0 {
@@ -95,6 +90,7 @@ func (this *Client) Read() {
 			if err != nil {
 				log.Println(err)
 			}
+			fmt.Println("首次查询:", results)
 			for _, result := range results {
 				replyMsg := ReplyMsg{
 					From:    result.From,
