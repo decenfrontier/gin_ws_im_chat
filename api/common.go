@@ -7,7 +7,7 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-//返回错误信息 ErrorResponse
+// 返回错误信息 ErrorResponse
 func ErrorResponse(err error) serializer.Response {
 	if _, ok := err.(validator.ValidationErrors); ok {
 		return serializer.Response{
