@@ -28,20 +28,20 @@ type ReplyMsg struct {
 type Client struct { // 用户类
 	ID     string
 	SendID string
-	Socket *websocket.Conn
+	WsConn *websocket.Conn
 	Send   chan []byte
 }
 
 // 接收消息
 func (this *Client) Read() {
 	defer func() {
-		Manager.Unregister <- this
-		_ = this.Socket.Close()
+		Manager.Offline <- this
+		_ = this.WsConn.Close()
 	}()
 	for {
-		this.Socket.PongHandler()
+		this.WsConn.PongHandler()
 		sendMsg := new(SendMsg)
-		err := this.Socket.ReadJSON(&sendMsg)
+		err := this.WsConn.ReadJSON(&sendMsg)
 		if err != nil {
 			log.Println("数据格式不正确", err)
 			break
@@ -55,7 +55,7 @@ func (this *Client) Read() {
 					Content: "达到限制",
 				}
 				msg, _ := json.Marshal(replyMsg)
-				_ = this.Socket.WriteMessage(websocket.TextMessage, msg)
+				_ = this.WsConn.WriteMessage(websocket.TextMessage, msg)
 				continue
 			} else {
 				conf.RedisClient.Incr(this.ID)
@@ -74,7 +74,7 @@ func (this *Client) Read() {
 					Content: "到底了",
 				}
 				msg, _ := json.Marshal(replyMsg)
-				_ = this.Socket.WriteMessage(websocket.TextMessage, msg)
+				_ = this.WsConn.WriteMessage(websocket.TextMessage, msg)
 				continue
 			}
 			for _, result := range results {
@@ -83,7 +83,7 @@ func (this *Client) Read() {
 					Content: fmt.Sprintf("%s", result.Msg),
 				}
 				msg, _ := json.Marshal(replyMsg)
-				_ = this.Socket.WriteMessage(websocket.TextMessage, msg)
+				_ = this.WsConn.WriteMessage(websocket.TextMessage, msg)
 			}
 		} else if sendMsg.Type == 3 { // 首次查询时, 取出对方发来的所有未读
 			results, err := FirstFindMsg(conf.MongoDBName, this.SendID, this.ID)
@@ -97,7 +97,7 @@ func (this *Client) Read() {
 					Content: fmt.Sprintf("%s", result.Msg),
 				}
 				msg, _ := json.Marshal(replyMsg)
-				_ = this.Socket.WriteMessage(websocket.TextMessage, msg)
+				_ = this.WsConn.WriteMessage(websocket.TextMessage, msg)
 			}
 		}
 	}
@@ -106,13 +106,13 @@ func (this *Client) Read() {
 // 发送消息
 func (this *Client) Write() {
 	defer func() {
-		_ = this.Socket.Close()
+		_ = this.WsConn.Close()
 	}()
 	for {
 		select {
 		case message, ok := <-this.Send:
 			if !ok {
-				_ = this.Socket.WriteMessage(websocket.CloseMessage, []byte{})
+				_ = this.WsConn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
 			log.Println(this.ID, "接受消息:", string(message))
@@ -121,25 +121,25 @@ func (this *Client) Write() {
 				Content: fmt.Sprintf("%s", string(message)),
 			}
 			msg, _ := json.Marshal(replyMsg)
-			_ = this.Socket.WriteMessage(websocket.TextMessage, msg)
+			_ = this.WsConn.WriteMessage(websocket.TextMessage, msg)
 		}
 	}
 }
 
 // 广播类，包括广播内容和源用户
 type Broadcast struct {
-	Client  *Client
-	Message []byte
-	Type    int
+	Client  *Client // 信息是哪个用户发送的
+	Message []byte  // 信息的内容
+	Type    int     // 信息的类型
 }
 
 // 用户管理
 type ClientManager struct {
-	Clients    map[string]*Client
-	Broadcast  chan *Broadcast
-	Reply      chan *Client
-	Register   chan *Client
-	Unregister chan *Client
+	Clients   map[string]*Client
+	Broadcast chan *Broadcast
+	Reply     chan *Client
+	Online    chan *Client // 在线的client
+	Offline   chan *Client // 离线的client
 }
 
 // Message 信息转JSON (包括：发送者、接收者、内容)
@@ -150,11 +150,11 @@ type Message struct {
 }
 
 var Manager = ClientManager{
-	Clients:    make(map[string]*Client), // 参与连接的用户，出于性能的考虑，需要设置最大连接数
-	Broadcast:  make(chan *Broadcast),
-	Register:   make(chan *Client),
-	Reply:      make(chan *Client),
-	Unregister: make(chan *Client),
+	Clients:   make(map[string]*Client), // 参与连接的用户，出于性能的考虑，需要设置最大连接数
+	Broadcast: make(chan *Broadcast),
+	Online:    make(chan *Client),
+	Reply:     make(chan *Client),
+	Offline:   make(chan *Client),
 }
 
 func CreateID(uid, toUid string) string {
@@ -179,11 +179,11 @@ func Handler(c *gin.Context) {
 	client := &Client{
 		ID:     CreateID(uid, toUid),
 		SendID: CreateID(toUid, uid),
-		Socket: conn,
+		WsConn: conn,
 		Send:   make(chan []byte),
 	}
 	// 用户注册到用户管理上
-	Manager.Register <- client
+	Manager.Online <- client
 	// 使用conn收发消息
 	go client.Read()
 	go client.Write()

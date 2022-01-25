@@ -7,7 +7,7 @@ import (
 
 type UserRegisterService struct {
 	UserName string `json:"user_name" form:"user_name"`
-	Password string `json:"user_name" form:"user_name"`
+	Password string `json:"password" form:"password"`
 }
 
 func (this *UserRegisterService) Register() serializer.Response {
