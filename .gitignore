@@ -17,3 +17,5 @@
 # vendor/
 
 .idea
+/test
+conf/config.ini
